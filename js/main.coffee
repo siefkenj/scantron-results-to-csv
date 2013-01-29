@@ -3,6 +3,37 @@ $ = (q) ->
 
 window.onload = ->
     $('#process').onclick = process
+    $('#idsample').onclick = showSampleID
+    $('#datasample').onclick = showSampleData
+
+
+
+SAMPLE_IDS = ("V00" + Math.random().toFixed(6).slice(-6) for i in [0...20])
+SAMPLE_NAMES = ["Rowden Shaun","Wetherbee Janay","Kimmell Kala","Dimmick Rikki","Storment Anitra","Karp Cassie","Mccallion Kisha","Sable Elijah","Svoboda Freeman","Reddick Trista","Sproull Deloras","Paisley Kerry","Furby Weston","Reyes Shiela","Ballou Clement","Woolum Gala","Desilets Stacey","Rickel Alethea","Royston Peg","Marlar Annamaria"]
+
+showSampleID = ->
+    $('#idorder').value = SAMPLE_IDS.join('\n')
+showSampleData = ->
+    paddWithSpace = (s, n) ->
+        return (s + "                    ").slice(0,n)
+    longNames = (paddWithSpace(n.toUpperCase(), 20) for n in SAMPLE_NAMES)
+    ids = SAMPLE_IDS.slice()
+    ids.sort()
+    scores = (Math.round(Math.random()*20) for i in [0...20])
+
+    # make the actual sample data
+    # NAME(20) ID(11) SCORE(5) PERCENT(2)
+    lines = []
+    for i in [0...10]
+        ret = ''
+        ret += longNames[i]
+        ret += paddWithSpace(ids[i].slice(-6), 11)
+        ret += paddWithSpace(scores[i], 5)
+        ret += scores[i]*5
+        lines.push ret
+    lines.sort()
+    $('#data').value = lines.join('\n')
+
 
 capitalizeName = (name) ->
     name = name.toLowerCase().split(/\W+/)

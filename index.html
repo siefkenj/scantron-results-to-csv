@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Scantron Results Convert</title>
+	<script src="js/main.js"></script>
+	<style>
+		textarea, code {
+			font-family: monospace, Courier;
+		}
+		.desc {
+			height: 7em;
+		}
+	</style>
+</head>
+<body>
+	<button id="process">Process</button>
+	<div style="float:left;">
+	<div style="width: 16ex;" class="desc">
+		List of Student ID's in the order you'd like them to appear
+		in the final output
+	</div>
+	<textarea id="idorder" rows="40" cols="16"></textarea>
+	</div>
+
+	<div style="float:left;">
+	<div style="width: 40ex;" class="desc">
+		Copy and pasted data from scantron email
+	</div>
+	<textarea id="data" rows="40" cols="40"></textarea>
+	</div>
+	
+	<div style="float:left;">
+	<div style="width: 40ex;" class="desc">
+		Processed data ready to copy and paste to
+		your grade spreadsheet.  The order is 
+		<code>ID | Score | Name</code>
+	</div>
+	<textarea id="result" rows="40" cols="40"></textarea>
+	</div>
+</body>
+</html>

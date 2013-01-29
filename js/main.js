@@ -78,7 +78,7 @@ capitalizeName = function(name) {
 };
 
 process = function() {
-  var id, idorder, l, output, s, summaryHash, summaryList, _i, _j, _len, _len1, _ref, _ref1;
+  var badBubblers, dat, duplicatesHash, erroniousLines, errorOutput, h, id, idorder, k, l, output, s, summaryHash, summaryList, unused, v, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
   idorder = $('#idorder').value.split(/\D+/);
   idorder = (function() {
     var _i, _len, _results;
@@ -91,25 +91,100 @@ process = function() {
     }
     return _results;
   })();
-  summaryList = scantronSummaryToList($('#data').value);
+  _ref = scantronSummaryToList($('#data').value), summaryList = _ref.lines, erroniousLines = _ref.erroniousLines;
+  duplicatesHash = {};
   summaryHash = {};
   for (_i = 0, _len = summaryList.length; _i < _len; _i++) {
     l = summaryList[_i];
-    summaryHash[l.id] = l;
+    if (!(summaryHash[l.id] != null)) {
+      summaryHash[l.id] = l;
+    } else {
+      duplicatesHash[l.id] = duplicatesHash[l.id] || [summaryHash[l.id]];
+      duplicatesHash[l.id].push(l);
+    }
+  }
+  for (h in duplicatesHash) {
+    l = duplicatesHash[h];
+    delete summaryHash[h];
   }
   output = "";
   for (_j = 0, _len1 = idorder.length; _j < _len1; _j++) {
     id = idorder[_j];
-    output += "" + id + "," + (((_ref = summaryHash[id]) != null ? _ref.score : void 0) || '') + ",\"" + (((_ref1 = summaryHash[id]) != null ? _ref1.name : void 0) || '') + "\"\n";
+    output += "V00" + id + "," + (((_ref1 = summaryHash[id]) != null ? _ref1.score : void 0) || '') + ",\"" + (((_ref2 = summaryHash[id]) != null ? _ref2.name : void 0) || '') + "\"\n";
+    if (summaryHash[id]) {
+      summaryHash[id].used = true;
+    }
   }
-  return $('#result').value = output;
+  unused = (function() {
+    var _results;
+    _results = [];
+    for (k in summaryHash) {
+      v = summaryHash[k];
+      if (!v.used) {
+        _results.push(v);
+      }
+    }
+    return _results;
+  })();
+  errorOutput = "";
+  if (unused.length > 0) {
+    errorOutput += "Tests with unmatched student numbers:\n";
+    for (_k = 0, _len2 = unused.length; _k < _len2; _k++) {
+      dat = unused[_k];
+      errorOutput += dat.originalLine + "\n";
+    }
+    errorOutput += "\n\n";
+  }
+  if (erroniousLines.length > 0) {
+    errorOutput += "Lines that could not be processed:\n";
+    for (_l = 0, _len3 = erroniousLines.length; _l < _len3; _l++) {
+      l = erroniousLines[_l];
+      errorOutput += l + '\n';
+    }
+    errorOutput += "\n\n";
+  }
+  if (Object.keys(duplicatesHash).length > 0) {
+    errorOutput += "Lines with IDs interpreted identically (scores not reported):\n";
+    for (h in duplicatesHash) {
+      l = duplicatesHash[h];
+      console.log(duplicatesHash);
+      for (_m = 0, _len4 = l.length; _m < _len4; _m++) {
+        v = l[_m];
+        errorOutput += v.originalLine + '\n';
+      }
+      errorOutput += '\n';
+    }
+    errorOutput += "\n\n";
+  }
+  badBubblers = (function() {
+    var _len5, _n, _results;
+    _results = [];
+    for (_n = 0, _len5 = summaryList.length; _n < _len5; _n++) {
+      l = summaryList[_n];
+      if (l.badBubbling) {
+        _results.push(l);
+      }
+    }
+    return _results;
+  })();
+  if (badBubblers.length > 0) {
+    errorOutput += "Students who incorrectly filled out bubble sheet (scores may be reported):\n";
+    for (_n = 0, _len5 = badBubblers.length; _n < _len5; _n++) {
+      l = badBubblers[_n];
+      errorOutput += l.originalLine + '\n';
+    }
+    errorOutput += "\n\n";
+  }
+  $('#result').value = output;
+  return $('#errors').value = errorOutput;
 };
 
 scantronSummaryToList = function(s) {
-  var l, lines, processLine, _i, _len, _ref;
+  var erroniousLines, l, lines, processLine, _i, _len, _ref, _ref1;
   processLine = function(l) {
-    var idIndex, ret, str, _i, _len;
-    l = l.split(/\s+/);
+    var e, id, idIndex, oldID, originalLine, ret, str, _i, _len;
+    originalLine = l;
+    l = l.replace(/([a-zA-Z])(\d)/g, "$1 $2").split(/\s+/);
     idIndex = null;
     for (i = _i = 0, _len = l.length; _i < _len; i = ++_i) {
       str = l[i];
@@ -118,25 +193,47 @@ scantronSummaryToList = function(s) {
         break;
       }
     }
-    if (!(idIndex != null)) {
-      throw new Error("Could not find id in \'" + l + "'");
+    if (!(idIndex != null) || l[idIndex].length < 6) {
+      e = new Error("Could not find id in \'" + l + "'");
+      e.originalLine = originalLine;
+      throw e;
     }
-    ret = {};
-    ret.id = l[idIndex].slice(-6);
+    ret = {
+      originalLine: originalLine
+    };
+    id = l[idIndex];
+    if (id.length > 6) {
+      oldID = id;
+      ret.badBubbling = true;
+      if (id.charAt(0) === '0') {
+        id = id.slice(-6);
+      } else {
+        id = id.slice(0, 6);
+      }
+      console.log(oldID, id);
+    }
+    ret.id = id;
     ret.score = l[idIndex + 1];
     ret.name = capitalizeName(l.slice(0, idIndex).join(' '));
     ret.percent = l[idIndex + 2];
     return ret;
   };
   lines = [];
+  erroniousLines = [];
   _ref = s.split(/\n/);
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     l = _ref[_i];
     try {
       lines.push(processLine(l));
     } catch (e) {
+      if ((_ref1 = e.originalLine) != null ? _ref1.match(/\w/) : void 0) {
+        erroniousLines.push(e.originalLine);
+      }
       console.log(e);
     }
   }
-  return lines;
+  return {
+    lines: lines,
+    erroniousLines: erroniousLines
+  };
 };

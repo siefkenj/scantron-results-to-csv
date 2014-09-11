@@ -70,11 +70,13 @@ createMergedTable = (idList=[], data) ->
     idHash = {}
     duplicateIdHash = {}
     for s in data
+        # if the id doesnt exist, create an entry for it
         if not idHash[s.id]?
             idHash[s.id] = s
+        # if it does exist, add it to the duplicates list
         else
             duplicateIdHash[s.id] = (duplicateIdHash[s.id] || [idHash[s.id]])
-            duplicateIdHash.push s
+            duplicateIdHash[s.id].push s
     for id,l of duplicateIdHash
         delete idHash[id]
         for s in l
